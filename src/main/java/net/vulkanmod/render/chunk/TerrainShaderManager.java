@@ -30,7 +30,7 @@ public abstract class TerrainShaderManager {
     private static Function<TerrainRenderType, GraphicsPipeline> shaderGetter;
 
     public static void init() {
-        setTerrainVertexFormat(CustomVertexFormat.COMPRESSED_TERRAIN);
+        setTerrainVertexFormat(CustomVertexFormat.COMPRESSED_TERRAIN_4);
         createBasicPipelines();
         setDefaultShader();
         ThreadBuilderPack.defaultTerrainBuilderConstructor();
@@ -48,7 +48,7 @@ public abstract class TerrainShaderManager {
     private static GraphicsPipeline createPipeline(String fragPath) {
         String pathF = String.format("basic/%s/%s", "terrain", fragPath);
 
-        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(CustomVertexFormat.COMPRESSED_TERRAIN, basePath);
+        Pipeline.Builder pipelineBuilder = new Pipeline.Builder(CustomVertexFormat.COMPRESSED_TERRAIN_4, basePath);
         pipelineBuilder.parseBindingsJSON();
 
 
