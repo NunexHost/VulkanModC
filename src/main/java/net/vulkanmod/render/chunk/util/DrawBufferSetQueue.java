@@ -4,15 +4,12 @@ import net.vulkanmod.render.chunk.DrawBuffers;
 
 import java.util.Arrays;
 import java.util.Iterator;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentLinkedQueue;
-import java.util.concurrent.PriorityBlockingQueue;
 
-public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> queue, ConcurrentHashMap<Integer, ConcurrentLinkedQueue<DrawBuffers>> cache)
+public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> queue)
 {
 
     public DrawBufferSetQueue(int size) {
-        this(size, new int[(int) Math.ceil((float)size / Integer.SIZE)], new StaticQueue<>(size), new ConcurrentHashMap<>());
+        this(size, new int[(int) Math.ceil((float)size / Integer.SIZE)], new StaticQueue<>(size));
     }
 
     public void add(DrawBuffers chunkArea) {
@@ -21,9 +18,8 @@ public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> q
 
         int i = chunkArea.areaIndex >> 5;
         if((this.set[i] & (1 << (chunkArea.areaIndex & 31))) == 0) {
-            this.queue.add(chunkArea);
+            queue.add(chunkArea);
             this.set[i] |= (1 << (chunkArea.areaIndex & 31));
-            this.cache.computeIfAbsent(chunkArea.areaIndex, k -> new ConcurrentLinkedQueue<>()).add(chunkArea);
         }
     }
 
@@ -31,19 +27,14 @@ public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> q
         Arrays.fill(this.set, 0);
 
         this.queue.clear();
-        this.cache.clear();
     }
 
     public Iterator<DrawBuffers> iterator(boolean reverseOrder) {
         return queue.iterator(reverseOrder);
     }
 
-    public Iterator<DrawBuffers> iterator(int areaIndex, boolean reverseOrder) {
-        ConcurrentLinkedQueue<DrawBuffers> queue = this.cache.get(areaIndex);
-        if (queue == null) {
-            return iterator(reverseOrder);
-        }
-
-        return queue.iterator(reverseOrder);
+    public Iterator<DrawBuffers> iterator() {
+        return this.iterator(false);
     }
+
 }
