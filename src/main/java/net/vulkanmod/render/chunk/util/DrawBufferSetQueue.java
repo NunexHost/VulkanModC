@@ -4,29 +4,40 @@ import net.vulkanmod.render.chunk.DrawBuffers;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
-public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> queue)
-{
+public record DrawBufferSetQueue(long occupied, ConcurrentLinkedQueue<DrawBuffers> queue) {
 
     public DrawBufferSetQueue(int size) {
-        this(size, new int[(int) Math.ceil((float)size / Integer.SIZE)], new StaticQueue<>(size));
+        this(0L, new ConcurrentLinkedQueue<>(size));
+    }
+
+    private static final long[] offsets = new long[32];
+
+    static {
+        for (int i = 0; i < 32; i++) {
+            offsets[i] = 1L << i;
+        }
     }
 
     public void add(DrawBuffers chunkArea) {
-        if(chunkArea.areaIndex >= this.size)
+        if (chunkArea.areaIndex >= Long.SIZE) {
             throw new IndexOutOfBoundsException();
+        }
 
-        int i = chunkArea.areaIndex >> 5;
-        if((this.set[i] & (1 << (chunkArea.areaIndex & 31))) == 0) {
+        int index = chunkArea.areaIndex;
+        int i = index >> 5; // bitset index
+        long mask = offsets[index & 31]; // bitmask for this index
+
+        if ((occupied & mask) == 0) {
+            occupied |= mask;
             queue.add(chunkArea);
-            this.set[i] |= (1 << (chunkArea.areaIndex & 31));
         }
     }
 
     public void clear() {
-        Arrays.fill(this.set, 0);
-
-        this.queue.clear();
+        occupied = 0;
+        queue.clear();
     }
 
     public Iterator<DrawBuffers> iterator(boolean reverseOrder) {
@@ -36,5 +47,4 @@ public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> q
     public Iterator<DrawBuffers> iterator() {
         return this.iterator(false);
     }
-
 }
