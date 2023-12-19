@@ -4,47 +4,46 @@ import net.vulkanmod.render.chunk.DrawBuffers;
 
 import java.util.Arrays;
 import java.util.Iterator;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.concurrent.PriorityBlockingQueue;
 
-public record DrawBufferSetQueue(long occupied, ConcurrentLinkedQueue<DrawBuffers> queue) {
+public record DrawBufferSetQueue(int size, int[] set, StaticQueue<DrawBuffers> queue, ConcurrentHashMap<Integer, ConcurrentLinkedQueue<DrawBuffers>> cache)
+{
 
     public DrawBufferSetQueue(int size) {
-        this(0L, new ConcurrentLinkedQueue<>(size));
-    }
-
-    private static final long[] offsets = new long[32];
-
-    static {
-        for (int i = 0; i < 32; i++) {
-            offsets[i] = 1L << i;
-        }
+        this(size, new int[(int) Math.ceil((float)size / Integer.SIZE)], new StaticQueue<>(size), new ConcurrentHashMap<>());
     }
 
     public void add(DrawBuffers chunkArea) {
-        if (chunkArea.areaIndex >= Long.SIZE) {
+        if(chunkArea.areaIndex >= this.size)
             throw new IndexOutOfBoundsException();
-        }
 
-        int index = chunkArea.areaIndex;
-        int i = index >> 5; // bitset index
-        long mask = offsets[index & 31]; // bitmask for this index
-
-        if ((occupied & mask) == 0) {
-            occupied |= mask;
-            queue.add(chunkArea);
+        int i = chunkArea.areaIndex >> 5;
+        if((this.set[i] & (1 << (chunkArea.areaIndex & 31))) == 0) {
+            this.queue.add(chunkArea);
+            this.set[i] |= (1 << (chunkArea.areaIndex & 31));
+            this.cache.computeIfAbsent(chunkArea.areaIndex, k -> new ConcurrentLinkedQueue<>()).add(chunkArea);
         }
     }
 
     public void clear() {
-        occupied = 0;
-        queue.clear();
+        Arrays.fill(this.set, 0);
+
+        this.queue.clear();
+        this.cache.clear();
     }
 
     public Iterator<DrawBuffers> iterator(boolean reverseOrder) {
         return queue.iterator(reverseOrder);
     }
 
-    public Iterator<DrawBuffers> iterator() {
-        return this.iterator(false);
+    public Iterator<DrawBuffers> iterator(int areaIndex, boolean reverseOrder) {
+        ConcurrentLinkedQueue<DrawBuffers> queue = this.cache.get(areaIndex);
+        if (queue == null) {
+            return iterator(reverseOrder);
+        }
+
+        return queue.iterator(reverseOrder);
     }
 }
