@@ -23,15 +23,25 @@ public class UploadBuffer {
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        if(!this.indexOnly)
+        if (!this.indexOnly) {
             this.vertexBuffer = Util.createCopy(renderedBuffer.vertexBuffer());
-        else
+        } else {
             this.vertexBuffer = null;
+        }
 
-        if(!drawState.sequentialIndex())
+        if (!drawState.sequentialIndex()) {
             this.indexBuffer = Util.createCopy(renderedBuffer.indexBuffer());
-        else
+        } else {
             this.indexBuffer = null;
+        }
+
+        // **Optimization:** Use a pool to avoid frequent memory allocation and deallocation.
+        if (this.vertexBuffer != null) {
+            this.vertexBuffer = VertexBufferPool.get().allocate();
+        }
+        if (this.indexBuffer != null) {
+            this.indexBuffer = IndexBufferPool.get().allocate();
+        }
     }
 
     public int indexCount() { return indexCount; }
@@ -41,10 +51,12 @@ public class UploadBuffer {
     public ByteBuffer getIndexBuffer() { return indexBuffer; }
 
     public void release() {
-        if(vertexBuffer != null)
-            MemoryUtil.memFree(vertexBuffer);
-        if(indexBuffer != null)
-            MemoryUtil.memFree(indexBuffer);
+        if (vertexBuffer != null) {
+            VertexBufferPool.get().free(vertexBuffer);
+        }
+        if (indexBuffer != null) {
+            IndexBufferPool.get().free(indexBuffer);
+        }
         this.released = true;
     }
 }
