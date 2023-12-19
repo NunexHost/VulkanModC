@@ -19,12 +19,12 @@ public enum TerrainRenderType {
     public static final EnumSet<TerrainRenderType> ALL_RENDER_TYPES = EnumSet.allOf(TerrainRenderType.class);
 
 
-    public final short maxSize;  //Not sure if this should be changed to UINT16_INDEX_MAX * vertexSize
+    public final int maxSize;  //Not sure if this should be changed to UINT16_INDEX_MAX * vertexSize
     public final int initialSize; //Only used W/ Per RenderTy[e AreaBuffers
 
     TerrainRenderType(RenderType renderType, int initialSize) {
 
-        this.maxSize = (short)renderType.bufferSize();
+        this.maxSize = renderType.bufferSize();
         this.initialSize = initialSize;
     }
 
@@ -33,7 +33,7 @@ public enum TerrainRenderType {
     }
 
     public static TerrainRenderType get(String renderType) {
-        switch (renderType)
+        return switch (renderType)
         {
             case "solid" -> SOLID;
             case "cutout_mipped" -> CUTOUT_MIPPED;
@@ -42,15 +42,5 @@ public enum TerrainRenderType {
             case "tripwire" -> TRIPWIRE;
             default -> throw new IllegalStateException("Unexpected value: " + renderType);
         };
-    }
-
-    /**
-     * Calcula o tamanho máximo do buffer de vértices para um determinado tipo de renderização.
-     *
-     * @param renderType O tipo de renderização.
-     * @return O tamanho máximo do buffer de vértices.
-     */
-    public static int getMaxBufferSize(TerrainRenderType renderType) {
-        return renderType.maxSize;
     }
 }
