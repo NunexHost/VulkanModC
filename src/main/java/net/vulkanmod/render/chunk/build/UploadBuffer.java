@@ -11,8 +11,8 @@ public class UploadBuffer {
     public final int indexCount;
     public final boolean autoIndices;
     public final boolean indexOnly;
-    private ByteBuffer vertexBuffer;
-    private ByteBuffer indexBuffer;
+    private final ByteBuffer vertexBuffer;
+    private final ByteBuffer indexBuffer;
 
     //debug
     private boolean released = false;
@@ -27,13 +27,9 @@ public class UploadBuffer {
         this.vertexBuffer = renderedBuffer.vertexBuffer();
         this.indexBuffer = renderedBuffer.indexBuffer();
 
-        // Only allocate buffers if needed
-        if (!this.indexOnly) {
-            if (!this.autoIndices) {
-                this.indexBuffer = Util.createCopy(renderedBuffer.indexBuffer());
-            }
-        } else {
-            this.indexBuffer = null;
+        // Use optimized index format
+        if (this.indexBuffer != null) {
+            this.indexBuffer = Util.asShortBuffer(this.indexBuffer);
         }
     }
 
