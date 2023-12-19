@@ -11,8 +11,8 @@ public class UploadBuffer {
     public final int indexCount;
     public final boolean autoIndices;
     public final boolean indexOnly;
-    private final ByteBuffer vertexBuffer;
-    private final ByteBuffer indexBuffer;
+    private ByteBuffer vertexBuffer;
+    private ByteBuffer indexBuffer;
 
     //debug
     private boolean released = false;
@@ -23,13 +23,15 @@ public class UploadBuffer {
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        // Use direct references to the original buffers
+        // Avoid unnecessary `Util.createCopy`
         this.vertexBuffer = renderedBuffer.vertexBuffer();
         this.indexBuffer = renderedBuffer.indexBuffer();
 
-        // Use optimized index format
-        if (this.indexBuffer != null) {
-            this.indexBuffer = Util.asShortBuffer(this.indexBuffer);
+        // Conditional buffer allocation
+        if (!this.indexOnly) {
+            this.vertexBuffer = null;
+        } else {
+            this.indexBuffer = null;
         }
     }
 
