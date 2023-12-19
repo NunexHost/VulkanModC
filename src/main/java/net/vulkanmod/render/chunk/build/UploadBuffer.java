@@ -6,17 +6,45 @@ import org.lwjgl.system.MemoryUtil;
 
 import java.nio.ByteBuffer;
 
+/**
+ * Represents a buffer that has been uploaded to the GPU.
+ */
 public class UploadBuffer {
 
-    public final int indexCount;
-    public final boolean autoIndices;
-    public final boolean indexOnly;
-    private final ByteBuffer vertexBuffer;
-    private final ByteBuffer indexBuffer;
+    /**
+     * The number of indices in the buffer.
+     */
+    public int getIndexCount() { return indexCount; }
 
-    //debug
-    private boolean released = false;
+    /**
+     * Returns a view of the vertex buffer.
+     *
+     * @throws IllegalStateException if the buffer has not been initialized
+     */
+    public ByteBuffer getVertexBufferView() {
+        if (vertexBuffer == null) {
+            throw new IllegalStateException("Vertex buffer has not been initialized");
+        }
+        return vertexBuffer.asReadOnlyBuffer();
+    }
 
+    /**
+     * Returns a view of the index buffer.
+     *
+     * @throws IllegalStateException if the buffer has not been initialized
+     */
+    public ByteBuffer getIndexBufferView() {
+        if (indexBuffer == null) {
+            throw new IllegalStateException("Index buffer has not been initialized");
+        }
+        return indexBuffer.asReadOnlyBuffer();
+    }
+
+    /**
+     * Creates a new `UploadBuffer` instance.
+     *
+     * @param renderedBuffer the rendered buffer to upload
+     */
     public UploadBuffer(TerrainBufferBuilder.RenderedBuffer renderedBuffer) {
         TerrainBufferBuilder.DrawState drawState = renderedBuffer.drawState();
         this.indexCount = drawState.indexCount();
@@ -34,29 +62,17 @@ public class UploadBuffer {
         } else {
             this.indexBuffer = null;
         }
-
-        // **Optimization:** Use a pool to avoid frequent memory allocation and deallocation.
-        if (this.vertexBuffer != null) {
-            this.vertexBuffer = VertexBufferPool.get().allocate();
-        }
-        if (this.indexBuffer != null) {
-            this.indexBuffer = IndexBufferPool.get().allocate();
-        }
     }
 
-    public int indexCount() { return indexCount; }
-
-    public ByteBuffer getVertexBuffer() { return vertexBuffer; }
-
-    public ByteBuffer getIndexBuffer() { return indexBuffer; }
-
+    /**
+     * Releases all resources associated with the buffer.
+     */
     public void release() {
         if (vertexBuffer != null) {
-            VertexBufferPool.get().free(vertexBuffer);
+            MemoryUtil.memFree(vertexBuffer);
         }
         if (indexBuffer != null) {
-            IndexBufferPool.get().free(indexBuffer);
+            MemoryUtil.memFree(indexBuffer);
         }
-        this.released = true;
     }
 }
