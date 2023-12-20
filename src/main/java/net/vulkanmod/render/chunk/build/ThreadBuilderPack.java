@@ -4,12 +4,12 @@ import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
-import java.util.Arrays;
-import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.function.Function;
 
 public class ThreadBuilderPack {
+
     private static Function<TerrainRenderType, TerrainBufferBuilder> terrainBuilderConstructor;
 
     public static void defaultTerrainBuilderConstructor() {
@@ -20,20 +20,25 @@ public class ThreadBuilderPack {
         terrainBuilderConstructor = constructor;
     }
 
-    private static final TerrainRenderType[] ACTIVE_LAYERS = TerrainRenderType.getActiveLayers().toArray(new TerrainRenderType[0]);
+    private final Map<TerrainRenderType, TerrainBufferBuilder> builders = new HashMap<>();
 
-    private static final Map<TerrainRenderType, TerrainBufferBuilder> BUILDERS = Arrays.stream(ACTIVE_LAYERS)
-            .collect(Collectors.toMap(Function.identity(), terrainBuilderConstructor));
-
-    public static TerrainBufferBuilder builder(TerrainRenderType renderType) {
-        return BUILDERS.get(renderType);
+    public ThreadBuilderPack() {
     }
 
-    public static void clearAll() {
-        BUILDERS.values().forEach(TerrainBufferBuilder::clear);
+    public synchronized TerrainBufferBuilder builder(TerrainRenderType renderType) {
+        TerrainBufferBuilder builder = builders.get(renderType);
+        if (builder == null) {
+            builder = terrainBuilderConstructor.apply(renderType);
+            builders.put(renderType, builder);
+        }
+        return builder;
     }
 
-    public static void discardAll() {
-        BUILDERS.values().forEach(TerrainBufferBuilder::discard);
+    public void clearAll() {
+        builders.values().forEach(TerrainBufferBuilder::clear);
+    }
+
+    public void discardAll() {
+        builders.values().forEach(TerrainBufferBuilder::discard);
     }
 }
