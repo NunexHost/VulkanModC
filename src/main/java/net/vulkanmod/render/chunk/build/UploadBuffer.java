@@ -11,8 +11,9 @@ public class UploadBuffer {
     public final int indexCount;
     public final boolean autoIndices;
     public final boolean indexOnly;
-    private final ByteBuffer vertexBuffer;
-    private final ByteBuffer indexBuffer;
+
+    private ByteBuffer vertexBuffer;
+    private ByteBuffer indexBuffer;
 
     //debug
     private boolean released = false;
@@ -23,15 +24,18 @@ public class UploadBuffer {
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        // Aloca buffers diretamente na memória de vídeo
-        this.vertexBuffer = MemoryUtil.memAlloc(renderedBuffer.vertexBuffer().remaining());
-        Util.copy(renderedBuffer.vertexBuffer(), this.vertexBuffer);
-
         if (!this.indexOnly) {
-            this.indexBuffer = MemoryUtil.memAlloc(renderedBuffer.indexBuffer().remaining());
-            Util.copy(renderedBuffer.indexBuffer(), this.indexBuffer);
+            this.vertexBuffer = Util.createDirectBuffer(renderedBuffer.vertexBuffer().capacity());
+            vertexBuffer.put(renderedBuffer.vertexBuffer());
         } else {
-            this.indexBuffer = null;
+            this.vertexBuffer = null;
+        }
+
+        if (!drawState.sequentialIndex()) {
+            this.indexBuffer = Util.createDirectBuffer(renderedBuffer.indexBuffer().capacity());
+            indexBuffer.put(renderedBuffer.indexBuffer());
+        } else {
+            this.indexBuffer = renderedBuffer.indexBuffer();
         }
     }
 
@@ -42,10 +46,13 @@ public class UploadBuffer {
     public ByteBuffer getIndexBuffer() { return indexBuffer; }
 
     public void release() {
-        // Libera buffers da memória de vídeo
-        MemoryUtil.memFree(vertexBuffer);
+        if (vertexBuffer != null) {
+            MemoryUtil.memFree(vertexBuffer);
+            vertexBuffer = null;
+        }
         if (indexBuffer != null) {
             MemoryUtil.memFree(indexBuffer);
+            indexBuffer = null;
         }
         this.released = true;
     }
