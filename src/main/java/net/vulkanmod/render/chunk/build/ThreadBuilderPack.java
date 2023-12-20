@@ -4,11 +4,9 @@ import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 public class ThreadBuilderPack {
     private static Function<TerrainRenderType, TerrainBufferBuilder> terrainBuilderConstructor;
@@ -21,24 +19,52 @@ public class ThreadBuilderPack {
         terrainBuilderConstructor = constructor;
     }
 
-    private final EnumMap<TerrainRenderType, TerrainBufferBuilder> builders=new EnumMap<>(TerrainRenderType.class);;
+    private final Map<TerrainRenderType, LazyTerrainBufferBuilder> builders = new ConcurrentHashMap<>();
 
     public ThreadBuilderPack() {
         for (TerrainRenderType renderType : TerrainRenderType.getActiveLayers()) {
-            builders.put(renderType, terrainBuilderConstructor.apply(renderType));
+            builders.put(renderType, new LazyTerrainBufferBuilder(renderType));
         }
     }
 
     public TerrainBufferBuilder builder(TerrainRenderType renderType) {
-        return this.builders.get(renderType);
+        return builders.get(renderType).get();
     }
 
     public void clearAll() {
-        this.builders.values().forEach(TerrainBufferBuilder::clear);
+        builders.values().forEach(LazyTerrainBufferBuilder::clear);
     }
 
     public void discardAll() {
-        this.builders.values().forEach(TerrainBufferBuilder::discard);
+        builders.values().forEach(LazyTerrainBufferBuilder::discard);
     }
 
+    private static class LazyTerrainBufferBuilder {
+        private final TerrainRenderType renderType;
+        private TerrainBufferBuilder builder;
+
+        public LazyTerrainBufferBuilder(TerrainRenderType renderType) {
+            this.renderType = renderType;
+        }
+
+        public TerrainBufferBuilder get() {
+            if (builder == null) {
+                builder = terrainBuilderConstructor.apply(renderType);
+            }
+            return builder;
+        }
+
+        public void clear() {
+            if (builder != null) {
+                builder.clear();
+            }
+        }
+
+        public void discard() {
+            if (builder != null) {
+                builder.discard();
+                builder = null;
+            }
+        }
+    }
 }
