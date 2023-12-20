@@ -7,8 +7,8 @@ import java.util.function.Consumer;
 
 public class ResettableQueue<T> implements Iterable<T> {
     T[] queue;
-    int position = 0;
-    int limit = 0;
+    int head = 0;
+    int tail = 0;
     int capacity;
 
     public ResettableQueue() {
@@ -23,12 +23,12 @@ public class ResettableQueue<T> implements Iterable<T> {
     }
 
     public boolean hasNext() {
-        return this.position < this.limit;
+        return tail != head;
     }
 
     public T poll() {
-        T t = this.queue[position];
-        this.position++;
+        T t = queue[head];
+        head = (head + 1) % capacity;
 
         return t;
     }
@@ -37,73 +37,56 @@ public class ResettableQueue<T> implements Iterable<T> {
         if(t == null)
             return;
 
-        if(limit == capacity) resize();
-        this.queue[limit] = t;
+        if((tail + 1) % capacity == head) {
+            // Resize the queue
+            int newCapacity = capacity * 2;
+            T[] newQueue = (T[])(new Object[newCapacity]);
 
-        this.limit++;
-    }
+            // Copy the old queue to the new one
+            System.arraycopy(queue, head, newQueue, 0, tail - head);
 
-    @SuppressWarnings("unchecked")
-    private void resize() {
-        this.capacity *= 2;
+            // Update the queue variables
+            queue = newQueue;
+            head = 0;
+            tail = tail - head;
+        }
 
-        T[] oldQueue = this.queue;
-        this.queue = (T[])(new Object[capacity]);
-
-        System.arraycopy(oldQueue, 0, this.queue, 0, oldQueue.length);
+        queue[tail] = t;
+        tail = (tail + 1) % capacity;
     }
 
     public int size() {
-        return limit;
+        return (tail - head) % capacity;
     }
 
     public void clear() {
-        this.position = 0;
-        this.limit = 0;
-    }
-
-    public Iterator<T> iterator(boolean reverseOrder) {
-        return reverseOrder ? new Iterator<>() {
-            int pos = ResettableQueue.this.limit - 1;
-            final int limit = -1;
-
-            @Override
-            public boolean hasNext() {
-                return pos > limit;
-            }
-
-            @Override
-            public T next() {
-                return queue[pos--];
-            }
-        }
-                : new Iterator<>() {
-            int pos = 0;
-            final int limit = ResettableQueue.this.limit;
-
-            @Override
-            public boolean hasNext() {
-                return pos < limit;
-            }
-
-            @Override
-            public T next() {
-                return queue[pos++];
-            }
-        };
+        head = 0;
+        tail = 0;
     }
 
     @NotNull
     @Override
     public Iterator<T> iterator() {
-        return iterator(false);
+        return new Iterator<>() {
+            int pos = head;
+
+            @Override
+            public boolean hasNext() {
+                return pos != tail;
+            }
+
+            @Override
+            public T next() {
+                T t = queue[pos];
+                pos = (pos + 1) % capacity;
+
+                return t;
+            }
+        };
     }
 
     @Override
     public void forEach(Consumer<? super T> action) {
-        for(int i = 0; i < this.limit; ++i) {
-            action.accept(this.queue[i]);
-        }
-
+        Arrays.stream(queue, head, tail).forEach(action);
     }
 }
