@@ -1,6 +1,10 @@
 package net.vulkanmod.mixin.chunk;
 
 import net.minecraft.client.renderer.culling.Frustum;
+import net.minecraft.client.renderer.culling.Frustum.EnumFrustumSide;
+import net.minecraft.client.renderer.culling.Frustum.Point;
+import net.minecraft.client.renderer.culling.Frustum.Side;
+import net.minecraft.util.math.Vec3d;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.chunk.VFrustum;
 import org.joml.Matrix4f;
@@ -25,7 +29,7 @@ public class FrustumMixin implements FrustumMixed {
             vFrustum = new VFrustum();
         }
 
-        vFrustum.calculateFrustum(modelView, projection);
+        vFrustum.calculateFrustum(modelView, projection, camZ);
         ci.cancel();
     }
 
