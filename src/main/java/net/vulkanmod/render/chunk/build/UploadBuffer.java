@@ -8,108 +8,56 @@ import java.nio.ByteBuffer;
 
 public class UploadBuffer {
 
-    /**
-     * Número de índices no buffer.
-     */
     public final int indexCount;
-
-    /**
-     * Se os índices são gerados sequencialmente.
-     */
     public final boolean autoIndices;
-
-    /**
-     * Se o buffer contém apenas índices.
-     */
     public final boolean indexOnly;
-
-    /**
-     * Buffer de vértices.
-     */
     private ByteBuffer vertexBuffer;
-
-    /**
-     * Buffer de índices.
-     */
     private ByteBuffer indexBuffer;
 
-    /**
-     * Indica se o buffer já foi liberado.
-     */
-    private boolean released;
+    //debug
+    private boolean released = false;
 
-    /**
-     * Constrói um buffer de upload.
-     *
-     * @param renderedBuffer Buffer renderizado.
-     */
     public UploadBuffer(TerrainBufferBuilder.RenderedBuffer renderedBuffer) {
         TerrainBufferBuilder.DrawState drawState = renderedBuffer.drawState();
         this.indexCount = drawState.indexCount();
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        /**
-         * Verifica se o buffer contém vértices.
-         */
+        // Avoid unnecessary copying - directly reference buffers if possible
         if (!this.indexOnly) {
-            this.vertexBuffer = Util.createCopy(renderedBuffer.vertexBuffer());
+            this.vertexBuffer = renderedBuffer.vertexBuffer();
         } else {
             this.vertexBuffer = null;
         }
 
-        /**
-         * Verifica se o buffer contém índices.
-         */
         if (!drawState.sequentialIndex()) {
-            this.indexBuffer = Util.createCopy(renderedBuffer.indexBuffer());
+            this.indexBuffer = renderedBuffer.indexBuffer();
         } else {
             this.indexBuffer = null;
         }
     }
 
-    /**
-     * Obtém o número de índices no buffer.
-     *
-     * @return Número de índices.
-     */
     public int indexCount() {
-        return this.indexCount;
+        return indexCount;
     }
 
-    /**
-     * Obtém o buffer de vértices.
-     *
-     * @return Buffer de vértices.
-     */
     public ByteBuffer getVertexBuffer() {
-        if (this.vertexBuffer == null) {
-            throw new IllegalStateException("O buffer de vértices não existe.");
-        }
-        return this.vertexBuffer;
+        // Ensure caller isn't modifying referenced buffer
+        return vertexBuffer != null ? vertexBuffer.asReadOnlyBuffer() : null;
     }
 
-    /**
-     * Obtém o buffer de índices.
-     *
-     * @return Buffer de índices.
-     */
     public ByteBuffer getIndexBuffer() {
-        if (this.indexBuffer == null) {
-            throw new IllegalStateException("O buffer de índices não existe.");
-        }
-        return this.indexBuffer;
+        // Ensure caller isn't modifying referenced buffer
+        return indexBuffer != null ? indexBuffer.asReadOnlyBuffer() : null;
     }
 
-    /**
-     * Libera o buffer.
-     */
     public void release() {
-        if (this.vertexBuffer != null) {
-            MemoryUtil.memFree(this.vertexBuffer);
+        // Only free buffers if they weren't directly referenced from source
+        if (vertexBuffer != renderedBuffer.vertexBuffer()) {
+            MemoryUtil.memFree(vertexBuffer);
         }
-        if (this.indexBuffer != null) {
-            MemoryUtil.memFree(this.indexBuffer);
+        if (indexBuffer != renderedBuffer.indexBuffer()) {
+            MemoryUtil.memFree(indexBuffer);
         }
         this.released = true;
     }
