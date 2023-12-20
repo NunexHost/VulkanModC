@@ -2,7 +2,7 @@ package net.vulkanmod.render.chunk.build;
 
 import com.google.common.collect.Lists;
 import it.unimi.dsi.fastutil.objects.ObjectArraySet;
-import net.minecraft.client.renderer.chunk.OcclusionConsumer;
+import net.minecraft.client.renderer.chunk.VisibilitySet;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
@@ -13,8 +13,8 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
 
-public class TerrainSection {
-    public static final TerrainSection UNCOMPILED = new TerrainSection() {
+public class CompiledSection {
+    public static final CompiledSection UNCOMPILED = new CompiledSection() {
         public boolean canSeeThrough(Direction dir1, Direction dir2) {
             return false;
         }
@@ -22,8 +22,11 @@ public class TerrainSection {
     public final Set<TerrainRenderType> renderTypes = EnumSet.noneOf(TerrainRenderType.class);
     boolean isCompletelyEmpty = true;
     final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
+    VisibilitySet visibilitySet = new VisibilitySet();
+    @Nullable
+    TerrainBufferBuilder.SortState transparencyState;
 
-    public boolean isEmpty() {
+    public boolean hasNoRenderableLayers() {
         return this.isCompletelyEmpty;
     }
 
@@ -36,6 +39,7 @@ public class TerrainSection {
     }
 
     public boolean canSeeThrough(Direction dir1, Direction dir2) {
-        return new OcclusionConsumer.VisibleFaces(dir1, dir2).apply();
+        return this.visibilitySet.visibilityBetween(dir1, dir2);
     }
 }
+
