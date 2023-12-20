@@ -4,7 +4,6 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
-import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
@@ -27,7 +26,7 @@ public class EntityRendererM<T extends Entity> {
             if(section == null)
                 return frustum.isVisible(aabb);
 
-            return worldRenderer.isChunkUpdatedInLastFrame(section);
+            return worldRenderer.isEntityChunkRecentlyRendered(section, entity);
         } else {
             return frustum.isVisible(aabb);
         }
@@ -37,6 +36,6 @@ public class EntityRendererM<T extends Entity> {
 
     @Redirect(method = "shouldRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;shouldRender(DD)Z"))
     private boolean shouldRender(Entity entity, double d, double e, double f) {
-        return entity.shouldRender(d, e, f) && (Initializer.CONFIG.entityCulling ? worldRenderer.isChunkUpdatedInLastFrame(worldRenderer.getSectionGrid().getSectionAtBlockPos(entity.getBlockX(), entity.getBlockY(), entity.getBlockZ())) : true);
+        return entity.shouldRender(d, e, f) && (Initializer.CONFIG.entityCulling ? worldRenderer.isEntityChunkRecentlyRendered(worldRenderer.getSectionGrid().getSectionAtBlockPos(entity.getBlockX(), entity.getBlockY(), entity.getBlockZ()), entity) : true);
     }
 }
