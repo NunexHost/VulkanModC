@@ -11,36 +11,34 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 public class ThreadBuilderPack {
-    private static final Function<TerrainRenderType, TerrainBufferBuilder> terrainBuilderConstructor;
+    private static Function<TerrainRenderType, TerrainBufferBuilder> terrainBuilderConstructor;
 
-    static {
+    public static void defaultTerrainBuilderConstructor() {
         terrainBuilderConstructor = renderType -> new TerrainBufferBuilder(renderType.maxSize);
     }
 
-    private final Map<TerrainRenderType, TerrainBufferBuilder> builders;
-
-    private ThreadBuilderPack(Map<TerrainRenderType, TerrainBufferBuilder> builders) {
-        this.builders = builders;
+    public static void setTerrainBuilderConstructor(Function<TerrainRenderType, TerrainBufferBuilder> constructor) {
+        terrainBuilderConstructor = constructor;
     }
 
-    public static ThreadBuilderPack create() {
-        Map<TerrainRenderType, TerrainBufferBuilder> builders = new HashMap<>();
+    private final EnumMap<TerrainRenderType, TerrainBufferBuilder> builders=new EnumMap<>(TerrainRenderType.class);;
+
+    public ThreadBuilderPack() {
         for (TerrainRenderType renderType : TerrainRenderType.getActiveLayers()) {
             builders.put(renderType, terrainBuilderConstructor.apply(renderType));
         }
-        return new ThreadBuilderPack(builders);
     }
 
     public TerrainBufferBuilder builder(TerrainRenderType renderType) {
-        return builders.get(renderType);
+        return this.builders.get(renderType);
     }
 
     public void clearAll() {
-        builders.values().forEach(TerrainBufferBuilder::clear);
+        this.builders.values().forEach(TerrainBufferBuilder::clear);
     }
 
     public void discardAll() {
-        builders.values().forEach(TerrainBufferBuilder::discard);
+        this.builders.values().forEach(TerrainBufferBuilder::discard);
     }
-}
 
+}
