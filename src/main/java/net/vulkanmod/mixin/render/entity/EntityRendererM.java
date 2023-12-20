@@ -14,28 +14,44 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 @Mixin(EntityRenderer.class)
 public class EntityRendererM<T extends Entity> {
 
+//    /**
+//     * @author
+//     * @reason
+//     */
+//    @Overwrite
+//    public boolean shouldRender(T entity, Frustum frustum, double d, double e, double f) {
+//        if (!entity.shouldRender(d, e, f)) {
+//            return false;
+//        } else if (entity.noCulling) {
+//            return true;
+//        } else {
+//            AABB aABB = entity.getBoundingBoxForCulling().inflate(0.5);
+//            if (aABB.hasNaN() || aABB.getSize() == 0.0) {
+//                aABB = new AABB(entity.getX() - 2.0, entity.getY() - 2.0, entity.getZ() - 2.0, entity.getX() + 2.0, entity.getY() + 2.0, entity.getZ() + 2.0);
+//            }
+//
+////            WorldRenderer.getInstance().getSectionGrid().getSectionAtBlockPos((int) entity.getX(), (int) entity.getY(), (int) entity.getZ());
+//            WorldRenderer worldRenderer = WorldRenderer.getInstance();
+////            return (worldRenderer.getLastFrame() == worldRenderer.getSectionGrid().getSectionAtBlockPos(entity.getBlockX(), entity.getBlockY(), entity.getBlockZ()).getLastFrame());
+//
+//            return frustum.isVisible(aABB);
+//        }
+//    }
+
     @Redirect(method = "shouldRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/culling/Frustum;isVisible(Lnet/minecraft/world/phys/AABB;)Z"))
-    private boolean isVisible(Frustum frustum, AABB aabb) {
+    private boolean isVisible(Frustum frustum, AABB aABB) {
         if(Initializer.CONFIG.entityCulling) {
             WorldRenderer worldRenderer = WorldRenderer.getInstance();
-
-            Vec3 pos = aabb.getCenter();
-
+            Vec3 pos = aABB.getCenter();
             RenderSection section = worldRenderer.getSectionGrid().getSectionAtBlockPos((int) pos.x(), (int) pos.y(), (int) pos.z());
 
             if(section == null)
-                return frustum.isVisible(aabb);
-
-            return worldRenderer.isEntityChunkRecentlyRendered(section, entity);
+                return frustum.isVisible(aABB);
+            else
+                return section.isVisibleInFrame();
         } else {
-            return frustum.isVisible(aabb);
+            return frustum.isVisible(aABB);
         }
-    }
 
-    // Opcional: incorporar a lógica de visibilidade individual das entidades
-
-    @Redirect(method = "shouldRender", at = @At(value = "INVOKE", target = "Lnet/minecraft/world/entity/Entity;shouldRender(DD)Z"))
-    private boolean shouldRender(Entity entity, double d, double e, double f) {
-        return entity.shouldRender(d, e, f) && (Initializer.CONFIG.entityCulling ? worldRenderer.isEntityChunkRecentlyRendered(worldRenderer.getSectionGrid().getSectionAtBlockPos(entity.getBlockX(), entity.getBlockY(), entity.getBlockZ()), entity) : true);
     }
 }
