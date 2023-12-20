@@ -17,55 +17,57 @@ public class RenderTargetMixin {
     @Shadow public int width;
     @Shadow public int height;
 
-    private Framebuffer framebuffer;
+    Framebuffer framebuffer;
 
+    /**
+     * @author
+     */
     @Overwrite
-    public void clear(boolean getError) {
-        if (this.framebuffer != null) {
-            this.framebuffer.clear(); // Utilize Framebuffer's clear method if available.
-        } else {
-            // Original logic for clearing without a framebuffer.
-        }
-    }
+    public void clear(boolean getError) {}
 
+    /**
+     * @author
+     */
     @Overwrite
     public void resize(int i, int j, boolean bl) {
-        if (this.framebuffer != null) {
-            this.framebuffer.resize(i, j); // Leverage existing resize method on the framebuffer.
-        } else {
-            this.viewWidth = i;
-            this.viewHeight = j;
-            this.width = i;
-            this.height = j;
-            // Allocate new framebuffer only if needed.
-            this.framebuffer = new Framebuffer(this.width, this.height, Framebuffer.DEFAULT_FORMAT);
+        if(this.framebuffer != null) {
+            this.framebuffer.cleanUp();
         }
+
+        this.viewWidth = i;
+        this.viewHeight = j;
+        this.width = i;
+        this.height = j;
+
+        //TODO
+//        this.framebuffer = new Framebuffer(this.width, this.height, Framebuffer.DEFAULT_FORMAT);
     }
 
+    /**
+     * @author
+     */
     @Overwrite
     public void bindWrite(boolean updateViewport) {
         Renderer.getInstance().beginRendering(framebuffer);
     }
 
+    /**
+     * @author
+     */
     @Overwrite
     public void unbindWrite() {
-        Renderer.getInstance().endRendering(); // Use endRendering instead of unbindWrite for clarity.
+
     }
 
+    /**
+     * @author
+     */
     @Overwrite
     private void _blitToScreen(int width, int height, boolean disableBlend) {
-        RenderSystem.depthMask(false); // Consider avoiding unnecessary depthMask calls by caching its state.
-
-        if (disableBlend) {
-            RenderSystem.disableBlend(); // Enable/disable blend only if changing state.
-        }
+        RenderSystem.depthMask(false);
 
         DrawUtil.drawFramebuffer(this.framebuffer);
 
-        if (disableBlend) {
-            RenderSystem.enableBlend(); // Re-enable blend if disabled earlier.
-        }
-
-        RenderSystem.depthMask(true); // Consider avoiding unnecessary depthMask calls by caching its state.
+        RenderSystem.depthMask(true);
     }
-        }
+}
