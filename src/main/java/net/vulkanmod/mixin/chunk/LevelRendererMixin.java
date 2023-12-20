@@ -3,6 +3,7 @@ package net.vulkanmod.mixin.chunk;
 import com.mojang.blaze3d.vertex.PoseStack;
 import it.unimi.dsi.fastutil.longs.Long2ObjectMap;
 import it.unimi.dsi.fastutil.objects.Object2ReferenceOpenHashMap;
+import it.unimi.dsi.fastutil.objects.ObjectArrayList;
 import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -15,12 +16,21 @@ import net.minecraft.server.level.BlockDestructionProgress;
 import net.minecraft.util.Mth;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.level.ChunkPos;
+import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.WorldRenderer;
+import net.vulkanmod.render.profiling.Profiler2;
 import net.vulkanmod.vulkan.util.Pair;
 import org.jetbrains.annotations.Nullable;
 import org.joml.Matrix4f;
 import org.spongepowered.asm.mixin.*;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.Set;
+import java.util.SortedSet;
 
 @Mixin(LevelRenderer.class)
 public abstract class LevelRendererMixin {
@@ -61,25 +71,13 @@ public abstract class LevelRendererMixin {
 
     @Inject(method = "allChanged", at = @At("RETURN"))
     private void allChanged(CallbackInfo ci) {
-        if (this.level != null) {
-            this.graphicsChanged();
-            this.level.clearTintCaches();
+        this.worldRenderer.allChanged();
+    }
 
-//            this.needsFullRenderChunkUpdate = true;
-            this.generateClouds = true;
-//            this.recentlyCompiledChunks.clear();
-            ItemBlockRenderTypes.setFancy(Minecraft.useFancyGraphics());
-            this.lastViewDistance = this.minecraft.options.getEffectiveRenderDistance();
-//         if (this.viewArea != null) {
-//            this.viewArea.releaseAllBuffers();
-//         }
-//
-//         this.chunkRenderDispatcher.blockUntilClear();
-            synchronized(this.globalBlockEntities) {
-                this.globalBlockEntities.clear();
-            }
-
-        }
+    @Inject(method = "renderLevel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/LevelRenderer;checkPoseStack(Lcom/mojang/blaze3d/vertex/PoseStack;)V", ordinal = 1, shift = At.Shift.BEFORE))
+    private void renderBlockEntities(PoseStack poseStack, float f, long l, boolean bl, Camera camera, GameRenderer gameRenderer, LightTexture lightTexture, Matrix4f matrix4f, CallbackInfo ci) {
+        Vec3 pos = camera.getPosition();
+        this.worldRenderer.renderBlockEntities(poseStack, pos.x(), pos.y(), pos.z(), this.destructionProgress, f);
     }
 
     /**
@@ -89,7 +87,7 @@ public abstract class LevelRendererMixin {
     @Overwrite
     private void setupRender(Camera camera, Frustum frustum, boolean isCapturedFrustum, boolean spectator) {
         this.worldRenderer.setupRenderer(camera, frustum, isCapturedFrustum, spectator);
-        
+
         entitiesMap.clear();
     }
 
@@ -306,4 +304,4 @@ public abstract class LevelRendererMixin {
 //        }
 //    }
 
-}
+            }
