@@ -11,9 +11,8 @@ public class UploadBuffer {
     public final int indexCount;
     public final boolean autoIndices;
     public final boolean indexOnly;
-
-    private ByteBuffer vertexBuffer;
-    private ByteBuffer indexBuffer;
+    private final ByteBuffer vertexBuffer;
+    private final ByteBuffer indexBuffer;
 
     //debug
     private boolean released = false;
@@ -24,19 +23,15 @@ public class UploadBuffer {
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        if (!this.indexOnly) {
-            this.vertexBuffer = Util.createDirectBuffer(renderedBuffer.vertexBuffer().capacity());
-            vertexBuffer.put(renderedBuffer.vertexBuffer());
-        } else {
+        if(!this.indexOnly)
+            this.vertexBuffer = Util.createCopy(renderedBuffer.vertexBuffer());
+        else
             this.vertexBuffer = null;
-        }
 
-        if (!drawState.sequentialIndex()) {
-            this.indexBuffer = Util.createDirectBuffer(renderedBuffer.indexBuffer().capacity());
-            indexBuffer.put(renderedBuffer.indexBuffer());
-        } else {
-            this.indexBuffer = renderedBuffer.indexBuffer();
-        }
+        if(!drawState.sequentialIndex())
+            this.indexBuffer = Util.createCopy(renderedBuffer.indexBuffer());
+        else
+            this.indexBuffer = null;
     }
 
     public int indexCount() { return indexCount; }
@@ -46,14 +41,10 @@ public class UploadBuffer {
     public ByteBuffer getIndexBuffer() { return indexBuffer; }
 
     public void release() {
-        if (vertexBuffer != null) {
+        if(vertexBuffer != null)
             MemoryUtil.memFree(vertexBuffer);
-            vertexBuffer = null;
-        }
-        if (indexBuffer != null) {
+        if(indexBuffer != null)
             MemoryUtil.memFree(indexBuffer);
-            indexBuffer = null;
-        }
         this.released = true;
     }
 }
