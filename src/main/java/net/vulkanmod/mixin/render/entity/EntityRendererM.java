@@ -4,6 +4,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.minecraft.client.renderer.entity.EntityRenderer;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.phys.AABB;
+import net.minecraft.world.phys.Vec3;
 import net.vulkanmod.Initializer;
 import net.vulkanmod.render.chunk.RenderSection;
 import net.vulkanmod.render.chunk.WorldRenderer;
@@ -42,13 +43,15 @@ public class EntityRendererM<T extends Entity> {
     private boolean isVisible(Frustum frustum, AABB aABB) {
         if(Initializer.CONFIG.entityCulling) {
             WorldRenderer worldRenderer = WorldRenderer.getInstance();
+
             Vec3 pos = aABB.getCenter();
+
             RenderSection section = worldRenderer.getSectionGrid().getSectionAtBlockPos((int) pos.x(), (int) pos.y(), (int) pos.z());
 
             if(section == null)
                 return frustum.isVisible(aABB);
-            else
-                return section.isVisibleInFrame();
+
+            return worldRenderer.getLastFrame() == section.getLastFrame();
         } else {
             return frustum.isVisible(aABB);
         }
