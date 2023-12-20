@@ -4,8 +4,9 @@ import net.minecraft.client.renderer.RenderType;
 import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 public class ThreadBuilderPack {
@@ -19,52 +20,20 @@ public class ThreadBuilderPack {
         terrainBuilderConstructor = constructor;
     }
 
-    private final Map<TerrainRenderType, LazyTerrainBufferBuilder> builders = new ConcurrentHashMap<>();
+    private static final TerrainRenderType[] ACTIVE_LAYERS = TerrainRenderType.getActiveLayers().toArray(new TerrainRenderType[0]);
 
-    public ThreadBuilderPack() {
-        for (TerrainRenderType renderType : TerrainRenderType.getActiveLayers()) {
-            builders.put(renderType, new LazyTerrainBufferBuilder(renderType));
-        }
+    private static final Map<TerrainRenderType, TerrainBufferBuilder> BUILDERS = Arrays.stream(ACTIVE_LAYERS)
+            .collect(Collectors.toMap(Function.identity(), terrainBuilderConstructor));
+
+    public static TerrainBufferBuilder builder(TerrainRenderType renderType) {
+        return BUILDERS.get(renderType);
     }
 
-    public TerrainBufferBuilder builder(TerrainRenderType renderType) {
-        return builders.get(renderType).get();
+    public static void clearAll() {
+        BUILDERS.values().forEach(TerrainBufferBuilder::clear);
     }
 
-    public void clearAll() {
-        builders.values().forEach(LazyTerrainBufferBuilder::clear);
-    }
-
-    public void discardAll() {
-        builders.values().forEach(LazyTerrainBufferBuilder::discard);
-    }
-
-    private static class LazyTerrainBufferBuilder {
-        private final TerrainRenderType renderType;
-        private TerrainBufferBuilder builder;
-
-        public LazyTerrainBufferBuilder(TerrainRenderType renderType) {
-            this.renderType = renderType;
-        }
-
-        public TerrainBufferBuilder get() {
-            if (builder == null) {
-                builder = terrainBuilderConstructor.apply(renderType);
-            }
-            return builder;
-        }
-
-        public void clear() {
-            if (builder != null) {
-                builder.clear();
-            }
-        }
-
-        public void discard() {
-            if (builder != null) {
-                builder.discard();
-                builder = null;
-            }
-        }
+    public static void discardAll() {
+        BUILDERS.values().forEach(TerrainBufferBuilder::discard);
     }
 }
