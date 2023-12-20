@@ -9,9 +9,8 @@ import net.vulkanmod.render.vertex.TerrainBufferBuilder;
 import net.vulkanmod.render.vertex.TerrainRenderType;
 
 import javax.annotation.Nullable;
+import java.util.BitSet;
 import java.util.EnumSet;
-import java.util.List;
-import java.util.Set;
 
 public class CompiledSection {
     public static final CompiledSection UNCOMPILED = new CompiledSection() {
@@ -19,28 +18,42 @@ public class CompiledSection {
             return false;
         }
     };
-    public final Set<TerrainRenderType> renderTypes = EnumSet.noneOf(TerrainRenderType.class);
-    boolean isCompletelyEmpty = true;
-    final List<BlockEntity> renderableBlockEntities = Lists.newArrayList();
-    VisibilitySet visibilitySet = new VisibilitySet();
+
+    public final BitSet renderTypes = new BitSet();
+    public boolean isCompletelyEmpty;
+    public final BlockEntity[] renderableBlockEntities = new BlockEntity[64];
+    public VisibilitySet visibilitySet = new VisibilitySet();
     @Nullable
-    TerrainBufferBuilder.SortState transparencyState;
+    public TerrainBufferBuilder.SortState transparencyState;
+
+    public CompiledSection() {
+        this.isCompletelyEmpty = true;
+    }
+
+    public void init(EnumSet<TerrainRenderType> renderTypes, List<BlockEntity> renderableBlockEntities) {
+        this.renderTypes.or(renderTypes);
+        this.isCompletelyEmpty = renderTypes.isEmpty();
+
+        for (int i = 0; i < renderableBlockEntities.size(); i++) {
+            this.renderableBlockEntities[i] = renderableBlockEntities.get(i);
+        }
+
+        this.visibilitySet.updateFromBlockEntities(this.renderableBlockEntities);
+    }
 
     public boolean hasNoRenderableLayers() {
         return this.isCompletelyEmpty;
     }
 
     public boolean isEmpty(TerrainRenderType p_112759_) {
-        return !this.renderTypes.contains(p_112759_);
+        return !this.renderTypes.get(p_112759_.ordinal());
     }
 
     public List<BlockEntity> getRenderableBlockEntities() {
-        return this.renderableBlockEntities;
+        return Lists.newArrayList(this.renderableBlockEntities);
     }
 
     public boolean canSeeThrough(Direction dir1, Direction dir2) {
         return this.visibilitySet.visibilityBetween(dir1, dir2);
     }
 }
-
-
