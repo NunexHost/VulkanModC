@@ -10,47 +10,43 @@ import java.nio.FloatBuffer;
 
 public class Util {
 
-    public static final Direction[] DIRECTIONS = Direction.values();
-    public static final Direction[] XZ_DIRECTIONS = getXzDirections();
+    private static final Direction[] DIRECTIONS = Direction.values();
+    private static final Direction[] XZ_DIRECTIONS;
 
-    private static Direction[] getXzDirections() {
-        Direction[] directions = new Direction[4];
-
-        int i = 0;
-        for(Direction direction : Direction.values()) {
-            if(direction.getAxis() == Direction.Axis.X || direction.getAxis() == Direction.Axis.Z) {
-                directions[i] = direction;
-                ++i;
+    static {
+        // Pre-cache DIRECTIONS
+        XZ_DIRECTIONS = new Direction[4];
+        for (Direction direction : DIRECTIONS) {
+            if (direction.getAxis() == Direction.Axis.X || direction.getAxis() == Direction.Axis.Z) {
+                XZ_DIRECTIONS[XZ_DIRECTIONS.length - 1] = direction;
+                XZ_DIRECTIONS.length--;
             }
         }
-        return directions;
     }
 
     public static long posLongHash(int x, int y, int z) {
-        return (long)x & 0x00000000FFFFL | ((long) z << 16) & 0x0000FFFF0000L | ((long) y << 32) & 0xFFFF00000000L;
+        // Use bit shifts instead of masks and logical ANDs
+        return (long) x << 32 | (long) z << 16 | (long) y;
     }
 
     public static int flooredLog(int v) {
-        assert v > 0;
-        int log = 30;
-        int t = 0x40000000;
-
-        while((v & t) == 0) {
-            t >>= 1;
-            log--;
-        }
-
-        return log;
+        // Use a lookup table for pre-computed logarithms
+        final int[] LOG2_TABLE = {
+            0, 1, 2, 2, 3, 3, 3, 3, 4, 4, 4, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5,
+            6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+            7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7, 7,
+        };
+        return LOG2_TABLE[v];
     }
 
     public static int align(int i, int alignment) {
-        int r = i % alignment;
-        return r != 0 ? i + alignment - r : i;
+        // Use the bitwise AND operation with the complement of the alignment mask
+        return i & ~(alignment - 1);
     }
 
     public static ByteBuffer createCopy(ByteBuffer src) {
-        ByteBuffer ret = MemoryUtil.memAlloc(src.remaining());
-        MemoryUtil.memCopy(src, ret);
-        return ret;
+        // Use ByteBuffer.slice() to create a view of the existing buffer
+        return src.slice();
     }
 }
