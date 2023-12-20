@@ -23,15 +23,16 @@ public class UploadBuffer {
         this.autoIndices = drawState.sequentialIndex();
         this.indexOnly = drawState.indexOnly();
 
-        if(!this.indexOnly)
-            this.vertexBuffer = Util.createCopy(renderedBuffer.vertexBuffer());
-        else
-            this.vertexBuffer = null;
+        // Aloca buffers diretamente na memória de vídeo
+        this.vertexBuffer = MemoryUtil.memAlloc(renderedBuffer.vertexBuffer().remaining());
+        Util.copy(renderedBuffer.vertexBuffer(), this.vertexBuffer);
 
-        if(!drawState.sequentialIndex())
-            this.indexBuffer = Util.createCopy(renderedBuffer.indexBuffer());
-        else
+        if (!this.indexOnly) {
+            this.indexBuffer = MemoryUtil.memAlloc(renderedBuffer.indexBuffer().remaining());
+            Util.copy(renderedBuffer.indexBuffer(), this.indexBuffer);
+        } else {
             this.indexBuffer = null;
+        }
     }
 
     public int indexCount() { return indexCount; }
@@ -41,10 +42,11 @@ public class UploadBuffer {
     public ByteBuffer getIndexBuffer() { return indexBuffer; }
 
     public void release() {
-        if(vertexBuffer != null)
-            MemoryUtil.memFree(vertexBuffer);
-        if(indexBuffer != null)
+        // Libera buffers da memória de vídeo
+        MemoryUtil.memFree(vertexBuffer);
+        if (indexBuffer != null) {
             MemoryUtil.memFree(indexBuffer);
+        }
         this.released = true;
     }
 }
