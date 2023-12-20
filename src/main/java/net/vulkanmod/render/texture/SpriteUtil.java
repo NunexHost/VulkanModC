@@ -4,33 +4,32 @@ import net.vulkanmod.vulkan.texture.VulkanImage;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 public abstract class SpriteUtil {
 
-    private static ThreadLocal<Boolean> doUpload = ThreadLocal.withInitial(() -> false);
-    private static Map<VulkanImage, Boolean> transitionedLayouts = new HashMap<>();
+    private static boolean doUpload = false;
+
+    private static Set<VulkanImage> transitionedLayouts = new HashSet<>();
 
     public static void setDoUpload(boolean b) {
-        doUpload.set(b);
+        doUpload = b;
     }
 
     public static boolean shouldUpload() {
-        return doUpload.get();
+        return doUpload;
     }
 
     public static void addTransitionedLayout(VulkanImage image) {
-        transitionedLayouts.put(image, true);
+        transitionedLayouts.add(image);
     }
 
     public static void transitionLayouts(VkCommandBuffer commandBuffer) {
-        transitionedLayouts.forEach((image, enable) -> {
-            if (enable) {
-                image.readOnlyLayout(commandBuffer);
-            }
-        });
+        try(MemoryStack stack = MemoryStack.stackPush()) {
+            transitionedLayouts.forEach(image -> image.readOnlyLayout(stack, commandBuffer));
 
-        transitionedLayouts.clear();
+            transitionedLayouts.clear();
+        }
     }
 }
