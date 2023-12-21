@@ -13,15 +13,15 @@ public class DirectionMixin {
 
     @Shadow @Final private int oppositeIndex;
 
-    private Direction cachedOpposite;
-
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void initCachedOpposite(int oppositeIndex) {
-        this.cachedOpposite = BY_3D_DATA[oppositeIndex];
-    }
-
+    /**
+     * @author
+     * @reason
+     */
     @Overwrite
     public Direction getOpposite() {
-        return cachedOpposite;
+        if (this.cachedOpposite == null) {
+            this.cachedOpposite = BY_3D_DATA[this.oppositeIndex];
+        }
+        return this.cachedOpposite;
     }
 }
