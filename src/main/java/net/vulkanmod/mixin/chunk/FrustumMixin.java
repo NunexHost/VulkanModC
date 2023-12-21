@@ -17,20 +17,20 @@ public class FrustumMixin implements FrustumMixed {
     @Shadow private double camY;
     @Shadow private double camZ;
 
-    private VFrustum vFrustum;
+    // Create VFrustum instance once
+    private final VFrustum vFrustum = new VFrustum();
 
-    @Inject(method = "<init>", at = @At("RETURN"))
-    private void init(CallbackInfo ci) {
-        this.vFrustum = new VFrustum();
-    }
+    // Optional caching for frustum values
+    private Matrix4f cachedFrustum;
 
     @Inject(method = "calculateFrustum", at = @At("HEAD"), cancellable = true)
     private void calculateFrustum(Matrix4f modelView, Matrix4f projection, CallbackInfo ci) {
-        if (this.vFrustum.isCalculated()) {
-            ci.cancel();
+        if (cachedFrustum == null || !cachedFrustum.equals(projection)) {
+            // Calculate frustum only if necessary
+            vFrustum.calculateFrustum(modelView, projection);
+            cachedFrustum = projection; // Cache for potential reuse
         }
-
-        this.vFrustum.calculateFrustum(modelView, projection);
+        ci.cancel();
     }
 
     @Inject(method = "prepare", at = @At("RETURN"))
@@ -40,6 +40,6 @@ public class FrustumMixin implements FrustumMixed {
 
     @Override
     public VFrustum customFrustum() {
-        return this.vFrustum;
+        return vFrustum;
     }
 }
