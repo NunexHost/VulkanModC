@@ -4,6 +4,7 @@ import net.minecraft.client.renderer.culling.Frustum;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.chunk.VFrustum;
 import org.joml.Matrix4f;
+import org.joml.Vec3d;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
