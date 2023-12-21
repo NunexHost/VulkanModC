@@ -13,6 +13,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Mixin(VertexFormat.class)
 public class VertexFormatMixin implements VertexFormatMixed {
@@ -34,10 +35,7 @@ public class VertexFormatMixin implements VertexFormatMixed {
 
     @Inject(method = "<init>", at = @At("RETURN"))
     private void injectList(ImmutableMap<String, VertexFormatElement> immutableMap, CallbackInfo ci) {
-        ObjectArrayList<VertexFormatElement> list = new ObjectArrayList<>();
-        list.addAll(immutableMap.values());
-
-        this.fastList = list;
+        // Use a stream for a potentially more efficient list creation
+        this.fastList = immutableMap.values().stream().collect(Collectors.toCollection(ObjectArrayList::new));
     }
-
 }
