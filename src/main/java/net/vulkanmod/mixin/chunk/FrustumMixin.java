@@ -49,7 +49,8 @@ public class FrustumMixin implements FrustumMixed {
     @Inject(method = "prepare", at = @At("RETURN"))
     public void prepare(double d, double e, double f, CallbackInfo ci) {
         // Avoid unnecessary calculations by only calling setCamOffset if the camera position has changed.
-        if (cachedFrustum.getCamX() != camX || cachedFrustum.getCamY() != camY || cachedFrustum.getCamZ() != camZ) {
+        // Use the `equals()` method to compare camera coordinates.
+        if (!cachedFrustum.getCam().equals(new Vec3d(camX, camY, camZ))) {
             cachedFrustum.setCamOffset(camX, camY, camZ);
         }
     }
