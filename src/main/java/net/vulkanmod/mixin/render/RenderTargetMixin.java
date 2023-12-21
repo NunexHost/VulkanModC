@@ -30,7 +30,7 @@ public class RenderTargetMixin {
      */
     @Overwrite
     public void resize(int i, int j, boolean bl) {
-        if(this.framebuffer != null) {
+        if (this.framebuffer != null && (this.width != i || this.height != j)) { // Check for size change before cleanup
             this.framebuffer.cleanUp();
         }
 
@@ -39,8 +39,10 @@ public class RenderTargetMixin {
         this.width = i;
         this.height = j;
 
-        //TODO
-//        this.framebuffer = new Framebuffer(this.width, this.height, Framebuffer.DEFAULT_FORMAT);
+        // Only create a new framebuffer if it's null or dimensions have changed
+        if (this.framebuffer == null || this.width != i || this.height != j) {
+            this.framebuffer = new Framebuffer(this.width, this.height, Framebuffer.DEFAULT_FORMAT);
+        }
     }
 
     /**
@@ -56,7 +58,8 @@ public class RenderTargetMixin {
      */
     @Overwrite
     public void unbindWrite() {
-
+        // If necessary, perform Vulkan operations to unbind the framebuffer
+        // (implementation details depend on Vulkan API usage)
     }
 
     /**
@@ -64,10 +67,9 @@ public class RenderTargetMixin {
      */
     @Overwrite
     private void _blitToScreen(int width, int height, boolean disableBlend) {
+        // Consider using batched rendering for multiple blits if applicable
         RenderSystem.depthMask(false);
-
         DrawUtil.drawFramebuffer(this.framebuffer);
-
         RenderSystem.depthMask(true);
     }
 }
