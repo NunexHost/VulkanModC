@@ -19,9 +19,6 @@ public class DirectionMixin {
      */
     @Overwrite
     public Direction getOpposite() {
-        if (this.cachedOpposite == null) {
-            this.cachedOpposite = BY_3D_DATA[this.oppositeIndex];
-        }
-        return this.cachedOpposite;
+        return BY_3D_DATA[this.oppositeIndex];
     }
 }
