@@ -1,10 +1,6 @@
 package net.vulkanmod.mixin.chunk;
 
 import net.minecraft.client.renderer.culling.Frustum;
-import net.minecraft.client.renderer.culling.Frustum.EnumFrustumSide;
-import net.minecraft.client.renderer.culling.Frustum.Point;
-import net.minecraft.client.renderer.culling.Frustum.Side;
-import net.minecraft.util.math.Vec3d;
 import net.vulkanmod.interfaces.FrustumMixed;
 import net.vulkanmod.render.chunk.VFrustum;
 import org.joml.Matrix4f;
@@ -21,27 +17,45 @@ public class FrustumMixin implements FrustumMixed {
     @Shadow private double camY;
     @Shadow private double camZ;
 
-    private VFrustum vFrustum;
+    private final VFrustum vFrustum = new VFrustum();
 
-    @Inject(method = "calculateFrustum", at = @At("HEAD"), cancellable = true)
+    /**
+     * Move instantiation outside the calculateFrustum method.
+     */
+    private VFrustum calculateFrustum() {
+        return vFrustum;
+    }
+
+    /**
+     * Consider caching frustum calculations.
+     */
+    private VFrustum cachedFrustum;
+
+    @Inject(method = "calculateFrustum", at = @At("HEAD"))
     private void calculateFrustum(Matrix4f modelView, Matrix4f projection, CallbackInfo ci) {
-        if (vFrustum == null) {
-            vFrustum = new VFrustum();
+        // Only calculate the frustum if it hasn't been calculated yet.
+        if (cachedFrustum == null) {
+            cachedFrustum = calculateFrustum();
         }
 
-        vFrustum.calculateFrustum(modelView, projection, camZ);
-        ci.cancel();
+        // Update the cached frustum with the new view and projection matrices.
+        cachedFrustum.calculateFrustum(modelView, projection);
     }
+
+    /**
+     * Review VFrustum implementation.
+     */
 
     @Inject(method = "prepare", at = @At("RETURN"))
     public void prepare(double d, double e, double f, CallbackInfo ci) {
-        if (vFrustum != null && camX != d || camY != e || camZ != f) {
-            vFrustum.setCamOffset(camX, camY, camZ);
+        // Avoid unnecessary calculations by only calling setCamOffset if the camera position has changed.
+        if (cachedFrustum.getCamX() != camX || cachedFrustum.getCamY() != camY || cachedFrustum.getCamZ() != camZ) {
+            cachedFrustum.setCamOffset(camX, camY, camZ);
         }
     }
 
     @Override
     public VFrustum customFrustum() {
-        return vFrustum;
+        return cachedFrustum;
     }
 }
