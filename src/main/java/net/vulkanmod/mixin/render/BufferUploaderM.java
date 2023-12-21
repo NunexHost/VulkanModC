@@ -29,15 +29,16 @@ public class BufferUploaderM {
 
         BufferBuilder.DrawState parameters = buffer.drawState();
 
+        if (parameters.vertexCount() <= 0) {
+            return; // Return early if no vertices to draw
+        }
+
         Renderer renderer = Renderer.getInstance();
+        GraphicsPipeline pipeline = ((ShaderMixed) RenderSystem.getShader()).getPipeline();
 
-        if(parameters.vertexCount() <= 0)
-            return;
+        // Combine binding and UBO uploading for potential efficiency
+        renderer.bindGraphicsPipelineAndUploadUBOs(pipeline);
 
-        GraphicsPipeline pipeline = ((ShaderMixed)(RenderSystem.getShader())).getPipeline();
-        renderer.bindGraphicsPipeline(pipeline);
-        renderer.uploadAndBindUBOs(pipeline);
         Renderer.getDrawer().draw(buffer.vertexBuffer(), parameters.mode(), parameters.format(), parameters.vertexCount());
     }
-
 }
