@@ -14,7 +14,12 @@ public class LiquidBlockRendererM {
      */
     @Overwrite
     private void vertex(VertexConsumer vertexConsumer, double d, double e, double f, float g, float h, float i, float j, float k, int l) {
-//        vertexConsumer.vertex(d, e, f).color(g, h, i, 1.0F).uv(j, k).uv2(l).normal(0.0F, 1.0F, 0.0F).endVertex();
-        vertexConsumer.vertex((float) d, (float) e, (float) f, g, h, i, 1.0f, j, k, 0, l, 0.0F, 1.0F, 0.0F);
+        // Pre-calculate frequently used values for potential performance gains
+        float xd = (float) d;
+        float yd = (float) e;
+        float zd = (float) f;
+
+        // Use a single call to vertex() for potential efficiency
+        vertexConsumer.vertex(xd, yd, zd, g, h, i, 1.0f, j, k, 0, l, 0.0F, 1.0F, 0.0F);
     }
 }
