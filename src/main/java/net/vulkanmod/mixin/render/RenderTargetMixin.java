@@ -41,7 +41,7 @@ public class RenderTargetMixin {
 
         // Only create a new framebuffer if it's null or dimensions have changed
         if (this.framebuffer == null || this.width != i || this.height != j) {
-            this.framebuffer = new Framebuffer(this.width, this.height, Framebuffer.DEFAULT_FORMAT);
+ //           this.framebuffer = new Framebuffer(this.width, this.height, Framebuffer.DEFAULT_FORMAT);
         }
     }
 
