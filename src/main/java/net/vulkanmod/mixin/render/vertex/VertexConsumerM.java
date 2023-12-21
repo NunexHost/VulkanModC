@@ -26,46 +26,40 @@ public interface VertexConsumerM {
         Vec3i vec3i = quad.getDirection().getNormal();
         Vector3f vec3f = new Vector3f(vec3i.getX(), vec3i.getY(), vec3i.getZ());
         Matrix4f matrix4f = matrixEntry.pose();
-        vec3f.mul(matrixEntry.normal());
+        vec3f.mul(matrixEntry.normal()); // Pre-calculate normal transformation for efficiency
 
         int j = js.length / 8;
 
         for (int k = 0; k < j; ++k) {
-            float q;
-            float p;
-            float o;
-
-            float l;
-            float n;
-            float m;
-
             int i = k * 8;
             float f = Float.intBitsToFloat(js[i]);
             float g = Float.intBitsToFloat(js[i + 1]);
             float h = Float.intBitsToFloat(js[i + 2]);
 
+            // Cache frequently used values
+            float brightnessK = brightness[k];
+            int lightK = lights[k];
+            float u = Float.intBitsToFloat(js[i + 4]);
+            float v = Float.intBitsToFloat(js[i + 5]);
+
+            float o, p, q;
             if (useQuadColorData) {
-                l = VertexUtil.unpackColorR(js[i + 3]); // equivalent to / 255.0f
-                m = VertexUtil.unpackColorG(js[i + 3]);
-                n = VertexUtil.unpackColorB(js[i + 3]);
-                o = l * brightness[k] * red;
-                p = m * brightness[k] * green;
-                q = n * brightness[k] * blue;
+                float l = VertexUtil.unpackColorR(js[i + 3]);
+                float m = VertexUtil.unpackColorG(js[i + 3]);
+                float n = VertexUtil.unpackColorB(js[i + 3]);
+                o = l * brightnessK * red;
+                p = m * brightnessK * green;
+                q = n * brightnessK * blue;
             } else {
-                o = brightness[k] * red;
-                p = brightness[k] * green;
-                q = brightness[k] * blue;
+                o = brightnessK * red;
+                p = brightnessK * green;
+                q = brightnessK * blue;
             }
 
-            int r = lights[k];
-            m = Float.intBitsToFloat(js[i + 4]);
-            n = Float.intBitsToFloat(js[i + 5]);
-
             Vector4f vector4f = new Vector4f(f, g, h, 1.0f);
-            vector4f.mul(matrix4f);
+            vector4f.mul(matrix4f); // Transform vertex directly
 
-            this.vertex(vector4f.x(), vector4f.y(), vector4f.z(), o, p, q, 1.0f, m, n, overlay, r, vec3f.x(), vec3f.y(), vec3f.z());
+            this.vertex(vector4f.x(), vector4f.y(), vector4f.z(), o, p, q, 1.0f, u, v, overlay, lightK, vec3f.x(), vec3f.y(), vec3f.z());
         }
-
     }
 }
